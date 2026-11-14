@@ -3,13 +3,13 @@
 A plain static site with no build step. Vercel serves it as is.
 
 ## Pages
-- `index.html`: home (photo, intro, details, Featured work, FAQs)
+- `index.html`: home (hero, client strip, Featured work, FAQs)
 - `work.html`: every project
 - `case.html#<slug>`: one case study page per project
 - `contact.html`: a 3-step enquiry form that opens the visitor's email app with the message filled in
 
 ## Your photo
-Your portrait is **`assets/ronij.jpg`**. It appears in the hero and on the contact page. Replace the file (same name) to change it.
+Save a portrait photo as **`assets/ronij.jpg`** (upright, at least 1200 px tall). It appears in the hero, the contact page and as the small round logo in the menu bar. Until it exists, a placeholder silhouette shows.
 
 ## Your details
 The hero details (based in, studio, clients, email) are written directly in `index.html`, inside `<dl class="details">`.
