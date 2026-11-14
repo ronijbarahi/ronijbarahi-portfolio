@@ -61,6 +61,25 @@ button { font: inherit; color: inherit; }
 .count { color: var(--accent-text); }
 .t-intro { font-size: clamp(24px, 2.3vw, 38px); line-height: 1.06; letter-spacing: -0.03em; font-weight: 500; color: var(--ink); text-wrap: balance; }
 
+/* ---------------- Intro loader ----------------
+   A count to 100 with an electric blue line, then the panel lifts away and the
+   page's own entrance plays underneath. First page of a visit only. */
+.loader { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); color: var(--ink);
+  flex-direction: column; justify-content: space-between; padding: 18px var(--pad) clamp(24px, 4vw, 44px); }
+html.is-loading .loader, .loader.is-done { display: flex; }
+html.is-loading { overflow: hidden; }
+.loader__top { display: flex; justify-content: space-between; color: var(--ink-2); }
+.loader__count { font-size: clamp(96px, 19vw, 300px); font-weight: 300; line-height: .82; letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums; margin-left: -0.04em; }
+.loader__bar { height: 2px; margin-top: clamp(16px, 2vw, 26px); background: var(--line); overflow: hidden; }
+.loader__bar span { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; }
+.loader__top, .loader__bottom { transition: opacity .35s var(--ease), transform .6s var(--ease); }
+.loader.is-done { transform: translateY(-100%); transition: transform .95s var(--ease-io) .12s; pointer-events: none; }
+.loader.is-done .loader__top, .loader.is-done .loader__bottom { opacity: 0; transform: translateY(-24px); }
+/* Hold the page's entrance until the loader lifts */
+html.is-loading [data-rise], html.is-loading [data-fade], html.is-loading .hero__portrait,
+html.is-loading .portrait__layer > img, html.is-loading .portrait__ph svg { animation-play-state: paused; }
+
 /* ---------------- Motion: load rise, page transitions ---------------- */
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -419,6 +438,7 @@ textarea.offer-field { resize: vertical; min-height: 160px; }
 .csa-next--mobile { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
+  .loader { display: none !important; }
   [data-rise], [data-fade], .hero__portrait, .portrait__layer > img, .portrait__layer > svg, .offer-step.is-rising, .offer-done { animation: none; }
   .qa__panel, .csa-acc__panel, .navmenu, .navmenu a, .csa-media, .tile-reveal, .cover-frame > img, .btn::before, .pill::before, .arrow-btn::before { transition: none; }
   ::view-transition-old(root), ::view-transition-new(root) { animation: none; }

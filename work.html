@@ -16,12 +16,30 @@
 <meta property="og:image" content="assets/ronij.jpg">
 <link rel="preload" href="assets/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/site.css">
+<script>
+/* Intro loader: first page of a visit only, never with reduced motion, and never longer than 5s. */
+(function () {
+  try {
+    if (sessionStorage.getItem('rb-intro') || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var root = document.documentElement;
+    root.classList.add('is-loading');
+    setTimeout(function () { root.classList.remove('is-loading'); }, 5000);
+  } catch (e) {}
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js" defer></script>
 <script src="assets/projects.js" defer></script>
 <script src="assets/media.js" defer></script>
 <script src="assets/site.js" defer></script>
 </head>
 <body data-page="work">
+<div class="loader" aria-hidden="true">
+  <div class="loader__top mono"><span>Portfolio 2026</span><span>Kathmandu, Nepal</span></div>
+  <div class="loader__bottom">
+    <p class="loader__count"><span data-loader-count>00</span></p>
+    <div class="loader__bar"><span></span></div>
+  </div>
+</div>
 <a class="skip-link" href="#main">Skip to content</a>
 <nav class="navbar" aria-label="Primary" data-fade>
   <a class="navbar__logo" href="index.html">Brand designer, Kathmandu</a>

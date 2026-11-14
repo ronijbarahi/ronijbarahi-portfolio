@@ -45,6 +45,44 @@
     } catch (e) { lenis = null; }
   }
 
+  /* ---------- Intro loader ----------
+     Counts up while the first screen loads (at least 1.1s so it never flashes,
+     at most 3.2s so nobody waits), then lifts away. */
+  const loader = $('.loader');
+  if (loader && document.documentElement.classList.contains('is-loading')) {
+    const root = document.documentElement;
+    const count = $('[data-loader-count]', loader), bar = $('.loader__bar span', loader);
+    const MIN = 1100, MAX = 3200, t0 = performance.now();
+    let ready = document.readyState === 'complete', shown = 0, finished = false;
+    if (!ready) addEventListener('load', () => { ready = true; }, { once: true });
+    if (lenis) lenis.stop();
+    const paint = n => { count.textContent = String(Math.round(n)).padStart(2, '0'); bar.style.transform = `scaleX(${n / 100})`; };
+    const finish = () => {
+      if (finished) return; finished = true;
+      paint(100);
+      try { sessionStorage.setItem('rb-intro', '1'); } catch (e) {}
+      setTimeout(() => {
+        loader.classList.add('is-done');
+        root.classList.remove('is-loading');
+        if (lenis) lenis.start();
+        setTimeout(() => loader.remove(), 1300);
+      }, 180);
+    };
+    const step = now => {
+      if (finished) return;
+      const t = now - t0;
+      const goal = ready && t >= MIN ? 100 : Math.min(92, (t / MIN) * 92);
+      shown += (goal - shown) * 0.14;
+      if (goal === 100 && shown > 99.4) shown = 100;
+      paint(shown);
+      if (shown >= 100 || t > MAX) return finish();
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  } else if (loader) {
+    loader.remove();
+  }
+
   /* ---------- Photo fallbacks ---------- */
   $$('.portrait').forEach(p => {
     const img = $('.portrait__base img', p);
