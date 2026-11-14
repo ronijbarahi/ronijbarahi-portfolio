@@ -6,7 +6,7 @@
   const page = document.body.dataset.page;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  const mobile = () => innerWidth < 810;
+  const mobile = () => innerWidth <= 1100;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ARROW = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.5 10.5L10.5 3.5M10.5 3.5H4.6M10.5 3.5V9.4" stroke="currentColor" stroke-width="1.2"/></svg>';
   const isVideo = src => /\.(mp4|webm|mov)$/i.test(src || '');
@@ -33,7 +33,7 @@
   addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 
   /* ---------- Smooth scroll (Lenis) ---------- */
-  if (!reduce && window.Lenis) {
+  if (!reduce && fine && window.Lenis) {
     try {
       lenis = new window.Lenis({ lerp: 0.09, wheelMultiplier: 0.95 });
       const loop = t => { lenis.raf(t); requestAnimationFrame(loop); };
@@ -110,17 +110,29 @@
       const done = () => media.classList.add('is-loaded');
       if (media.tagName === 'IMG') { if (media.complete && media.naturalWidth) done(); else media.addEventListener('load', done, { once: true }); }
       else media.addEventListener('loadeddata', done, { once: true });
+      // Some phone browsers skip the load event for lazy images: never leave one hidden.
+      setTimeout(done, 2500);
     });
   };
-  const mediaTag = (src, ph, cls = '') => isVideo(src)
-    ? `<video class="${cls}" src="${esc(src)}" muted loop playsinline autoplay preload="metadata" data-ph="${esc(ph)}"></video>`
-    : `<img class="${cls}" src="${esc(src)}" alt="" loading="lazy" decoding="async" data-ph="${esc(ph)}">`;
+  // Each work image has -640 and -1280 copies (see assets/media.js) so phones and tablets
+  // download and decode far less than the 2000px original.
+  const MW = window.MEDIA_W || {};
+  const srcsetFor = src => {
+    const w = MW[src]; if (!w || !/\.jpe?g$/i.test(src)) return '';
+    const base = src.replace(/\.jpe?g$/i, '');
+    return [640, 1280].filter(x => w > x).map(x => `${base}-${x}.jpg ${x}w`).concat(`${src} ${w}w`).join(', ');
+  };
+  const mediaTag = (src, ph, cls = '', { sizes = '100vw', eager = false } = {}) => {
+    if (isVideo(src)) return `<video class="${cls}" src="${esc(src)}" muted loop playsinline autoplay preload="metadata" data-ph="${esc(ph)}"></video>`;
+    const ss = srcsetFor(src);
+    return `<img class="${cls}" src="${esc(src)}"${ss ? ` srcset="${esc(ss)}" sizes="${sizes}"` : ''} alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" data-ph="${esc(ph)}">`;
+  };
 
-  const coverHTML = p => {
+  const coverHTML = (p, eager = false) => {
     const src = fileUrl(p, p.cover);
     const ph = phHTML(p, src || `work/${p.slug}/cover.jpg`);
     const hover = p.hoverVideo ? `<div class="tile-reveal"><video muted loop playsinline preload="none" data-src="${esc(fileUrl(p, p.hoverVideo))}"></video></div>` : '';
-    return `<div class="cover-frame">${mediaTag(src, ph)}${hover}</div>`;
+    return `<div class="cover-frame">${mediaTag(src, ph, '', { sizes: '(max-width: 1100px) 100vw, 50vw', eager })}${hover}</div>`;
   };
   const iconHTML = p => `<span class="icon icon--ph" style="--ph-bg:${esc(p.swatch?.bg || '#222')};--ph-fg:${esc(p.swatch?.fg || '#aaa')}">${esc((p.client || '?').trim()[0])}</span>`;
   const wireIcons = root => $$('[data-icon-ph]', root).forEach(img => {
@@ -154,7 +166,7 @@
   if (rows) {
     rows.innerHTML = FEATURED.map((p, i) => `
 <article class="featured-row">
-  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p)}</a>
+  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p, i < 2)}</a>
   <div class="featured-row__text">
     <div class="featured-row__top">
       <span class="featured-row__num mono">${String(i + 1).padStart(2, '0')}</span>
@@ -177,9 +189,9 @@
   /* ---------- Work page ---------- */
   const workRows = $('[data-work-rows]');
   if (workRows) {
-    workRows.innerHTML = P.map(p => `
+    workRows.innerHTML = P.map((p, i) => `
 <article class="work-row">
-  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p)}</a>
+  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p, i < 2)}</a>
   <div>
     <a class="work-row__head" href="${caseUrl(p)}">
       <span class="work-row__lead">${iconHTML(p)}<span>${esc(p.client)}</span></span>
@@ -232,7 +244,8 @@
           n++;
           const src = fileUrl(p, file);
           const ph = phHTML(p, src, { word: n === 1 || (ri === 0 && row.length === 1), neutral: !(n === 1 || (ri === 0 && row.length === 1)) });
-          return `<div class="csa-frame">${mediaTag(src, ph, 'csa-media')}</div>`;
+          const two = Math.min(row.length, 2) === 2;
+          return `<div class="csa-frame">${mediaTag(src, ph, 'csa-media', { sizes: two ? '(max-width: 1100px) 50vw, 33vw' : '(max-width: 1100px) 100vw, 66vw', eager: n <= 2 })}</div>`;
         }).join('');
         return `<div class="csa-row" style="--n: ${Math.min(row.length, 2)}" data-ch="${ci}"${ri === 0 ? ` id="ch-${ci}" data-ch-start` : ''}>${frames}</div>`;
       }).join('')).join('');
@@ -279,8 +292,9 @@
   }
 
   /* ---------- Contact form ----------
-     A static site has no server, so the form writes the email for you and opens
-     your visitor's mail app with everything filled in. */
+     Each enquiry is sent to a Google Apps Script web app (data-endpoint), which adds
+     a row to Ronij's Google Sheet and emails him the details. If that request can't
+     be sent, the form falls back to opening the visitor's mail app with the message. */
   const form = $('[data-contact-form]');
   if (form) {
     const steps = $$('.offer-step', form);
@@ -316,13 +330,28 @@
         `Looking for: ${v('need')}`, `Start: ${v('timeline')}`, '', v('message')
       ].filter((l, k) => l !== '' || k === 5).join('\n');
       const to = form.dataset.to;
-      const href = `mailto:${to}?subject=${encodeURIComponent('Project enquiry from ' + v('name'))}&body=${encodeURIComponent(body)}`;
-      form.innerHTML = `<div class="offer-done"><p>Your email app should now open with the message written. Press send there to reach me.</p><p>Nothing opened? Email <a href="mailto:${to}">${to}</a> directly, or <button type="button" class="btn" data-copy>Copy your message</button></p></div>`;
-      $('[data-copy]', form).addEventListener('click', ev => {
-        const b = ev.currentTarget;
-        (navigator.clipboard ? navigator.clipboard.writeText(body) : Promise.reject()).then(() => b.textContent = 'Copied', () => b.textContent = 'Copy failed: select the text in your email app');
-      });
-      try { location.href = href; } catch (e2) {}
+      const endpoint = form.dataset.endpoint || '';
+      const esc2 = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const viaMail = () => {
+        const href = `mailto:${to}?subject=${encodeURIComponent('Project enquiry from ' + v('name'))}&body=${encodeURIComponent(body)}`;
+        form.innerHTML = `<div class="offer-done"><p>Your email app should now open with the message written. Press send there to reach me.</p><p>Nothing opened? Email <a href="mailto:${to}">${to}</a> directly, or <button type="button" class="btn" data-copy>Copy your message</button></p></div>`;
+        $('[data-copy]', form).addEventListener('click', ev => {
+          const b = ev.currentTarget;
+          (navigator.clipboard ? navigator.clipboard.writeText(body) : Promise.reject()).then(() => b.textContent = 'Copied', () => b.textContent = 'Copy failed: select the text in your email app');
+        });
+        try { location.href = href; } catch (e2) {}
+      };
+      if (!/^https:\/\/script\.google\.com\//.test(endpoint)) return viaMail();
+      const data = new URLSearchParams();
+      ['name', 'email', 'website', 'need', 'timeline', 'message', 'company'].forEach(k => data.append(k, v(k)));
+      data.append('page', location.href);
+      nextBtn.disabled = true; back.disabled = true; nextBtn.textContent = 'Sending…';
+      fetch(endpoint, { method: 'POST', mode: 'no-cors', body: data })
+        .then(() => {
+          const first = v('name').split(/\s+/)[0];
+          form.innerHTML = `<div class="offer-done"><p>Thank you${first ? ', ' + esc2(first) : ''}. Your message has reached me, and I'll reply to ${esc2(v('email'))} soon.</p></div>`;
+        })
+        .catch(() => { nextBtn.disabled = false; back.disabled = false; viaMail(); });
     });
     show(0);
   }
