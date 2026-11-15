@@ -138,10 +138,10 @@
   const wireFallbacks = root => {
     $$('[data-ph]', root).forEach(media => {
       const fail = () => {
-        const wrap = media.parentElement;
+        const wrap = media.closest('.cover-frame, .csa-frame') || media.parentElement;
         wrap.insertAdjacentHTML('beforeend', media.dataset.ph);
         wrap.classList.add('csa-frame--ph');
-        media.remove();
+        (media.closest('picture') || media).remove();
       };
       if (!media.getAttribute('src')) return fail();
       media.addEventListener('error', fail, { once: true });
@@ -152,25 +152,32 @@
       setTimeout(done, 2500);
     });
   };
-  // Each work image has -640 and -1280 copies (see assets/media.js) so phones and tablets
-  // download and decode far less than the 2000px original.
-  const MW = window.MEDIA_W || {};
-  const srcsetFor = src => {
-    const w = MW[src]; if (!w || !/\.jpe?g$/i.test(src)) return '';
-    const base = src.replace(/\.jpe?g$/i, '');
-    return [640, 1280].filter(x => w > x).map(x => `${base}-${x}.jpg ${x}w`).concat(`${src} ${w}w`).join(', ');
+  /* Work images (see assets/media.js): browsers pick the smallest copy that is sharp on the
+     screen, as WebP at 640/960/1280/1600px or full size, with JPEG kept for old browsers.
+     While an image loads its frame shows the image's average colour (and, for covers,
+     a tiny blurred preview), then the image fades in. */
+  const MEDIA = window.MEDIA || {};
+  const stem = src => src.replace(/\.jpe?g$/i, '');
+  const webpSet = (src, w) => [640, 960, 1280, 1600].filter(x => w > x).map(x => `${stem(src)}-${x}.webp ${x}w`).concat(`${stem(src)}.webp ${w}w`).join(', ');
+  const jpgSet = (src, w) => [640, 1280].filter(x => w > x).map(x => `${stem(src)}-${x}.jpg ${x}w`).concat(`${src} ${w}w`).join(', ');
+  const frameStyle = src => {
+    const m = MEDIA[src]; if (!m) return '';
+    return ` style="--tint: ${m[2]};${m[3] ? ` --lqip: url('${m[3]}');` : ''}"`;
   };
   const mediaTag = (src, ph, cls = '', { sizes = '100vw', eager = false } = {}) => {
     if (isVideo(src)) return `<video class="${cls}" src="${esc(src)}" muted loop playsinline autoplay preload="metadata" data-ph="${esc(ph)}"></video>`;
-    const ss = srcsetFor(src);
-    return `<img class="${cls}" src="${esc(src)}"${ss ? ` srcset="${esc(ss)}" sizes="${sizes}"` : ''} alt="" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" data-ph="${esc(ph)}">`;
+    const load = eager ? 'fetchpriority="high"' : 'loading="lazy"';
+    const m = MEDIA[src];
+    if (!m || !/\.jpe?g$/i.test(src)) return `<img class="${cls}" src="${esc(src)}" alt="" ${load} decoding="async" data-ph="${esc(ph)}">`;
+    return `<picture><source type="image/webp" srcset="${esc(webpSet(src, m[0]))}" sizes="${sizes}">` +
+      `<img class="${cls}" src="${esc(src)}" srcset="${esc(jpgSet(src, m[0]))}" sizes="${sizes}" width="${m[0]}" height="${m[1]}" alt="" ${load} decoding="async" data-ph="${esc(ph)}"></picture>`;
   };
 
   const coverHTML = (p, eager = false) => {
     const src = fileUrl(p, p.cover);
     const ph = phHTML(p, src || `work/${p.slug}/cover.jpg`);
     const hover = p.hoverVideo ? `<div class="tile-reveal"><video muted loop playsinline preload="none" data-src="${esc(fileUrl(p, p.hoverVideo))}"></video></div>` : '';
-    return `<div class="cover-frame">${mediaTag(src, ph, '', { sizes: '(max-width: 1100px) 100vw, 50vw', eager })}${hover}</div>`;
+    return `<div class="cover-frame"${frameStyle(src)}>${mediaTag(src, ph, 'fade', { sizes: '(max-width: 1100px) 100vw, 50vw', eager })}${hover}</div>`;
   };
   const iconHTML = p => `<span class="icon icon--ph" style="--ph-bg:${esc(p.swatch?.bg || '#222')};--ph-fg:${esc(p.swatch?.fg || '#aaa')}">${esc((p.client || '?').trim()[0])}</span>`;
   const wireIcons = root => $$('[data-icon-ph]', root).forEach(img => {
@@ -283,7 +290,7 @@
           const src = fileUrl(p, file);
           const ph = phHTML(p, src, { word: n === 1 || (ri === 0 && row.length === 1), neutral: !(n === 1 || (ri === 0 && row.length === 1)) });
           const two = Math.min(row.length, 2) === 2;
-          return `<div class="csa-frame">${mediaTag(src, ph, 'csa-media', { sizes: two ? '(max-width: 1100px) 50vw, 33vw' : '(max-width: 1100px) 100vw, 66vw', eager: n <= 2 })}</div>`;
+          return `<div class="csa-frame"${frameStyle(src)}>${mediaTag(src, ph, 'csa-media', { sizes: two ? '(max-width: 1100px) 50vw, 33vw' : '(max-width: 1100px) 100vw, 66vw', eager: n <= 2 })}</div>`;
         }).join('');
         return `<div class="csa-row" style="--n: ${Math.min(row.length, 2)}" data-ch="${ci}"${ri === 0 ? ` id="ch-${ci}" data-ch-start` : ''}>${frames}</div>`;
       }).join('')).join('');
