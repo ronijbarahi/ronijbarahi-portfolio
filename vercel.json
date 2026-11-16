@@ -3,7 +3,7 @@
   "trailingSlash": false,
   "headers": [
     {
-      "source": "/work/(.*)",
+      "source": "/work/(.*)\\.(webp|jpg|jpeg|png|mp4)",
       "headers": [
         {
           "key": "Cache-Control",
