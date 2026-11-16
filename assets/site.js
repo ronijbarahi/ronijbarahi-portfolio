@@ -7,11 +7,9 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const mobile = () => innerWidth <= 1100;
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const ARROW = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.5 10.5L10.5 3.5M10.5 3.5H4.6M10.5 3.5V9.4" stroke="currentColor" stroke-width="1.2"/></svg>';
-  const isVideo = src => /\.(mp4|webm|mov)$/i.test(src || '');
-  const caseUrl = p => 'case.html#' + p.slug;
-  const fileUrl = (p, f) => !f ? '' : (/\//.test(f) ? f : `work/${p.slug}/${f}`);
+  // HTML for the work lists and case studies lives in assets/templates.js, shared with the build.
+  const T = window.RB.make(window.MEDIA || {});
+  const esc = T.esc;
   const FEATURED = P.filter(p => p.featured);
   let lenis = null;
 
@@ -130,10 +128,6 @@
   $$('[data-count]').forEach(el => { const n = el.dataset.count === 'featured' ? FEATURED.length : P.length; el.textContent = '(' + String(n).padStart(2, '0') + ')'; });
 
   /* ---------- Media helpers ---------- */
-  const phStyle = (p, neutral) => neutral ? '' : `style="--ph-bg:${esc(p.swatch?.bg || '#141414')};--ph-fg:${esc(p.swatch?.fg || '#8a8a8a')}"`;
-  const phHTML = (p, file, { word = true, neutral = false } = {}) =>
-    `<div class="ph" ${phStyle(p, neutral)}>${word ? `<span class="ph__word">${esc(p.client)}</span>` : ''}<span class="ph__file">${esc(file)}</span></div>`;
-
   // Swap any image or video that fails to load (or has no path yet) for its placeholder.
   const wireFallbacks = root => {
     $$('[data-ph]', root).forEach(media => {
@@ -152,34 +146,8 @@
       setTimeout(done, 2500);
     });
   };
-  /* Work images (see assets/media.js): browsers pick the smallest copy that is sharp on the
-     screen, as WebP at 640/960/1280/1600px or full size, with JPEG kept for old browsers.
-     While an image loads its frame shows the image's average colour (and, for covers,
+  /* While an image loads its frame shows the image's average colour (and, for covers,
      a tiny blurred preview), then the image fades in. */
-  const MEDIA = window.MEDIA || {};
-  const stem = src => src.replace(/\.jpe?g$/i, '');
-  const webpSet = (src, w) => [640, 960, 1280, 1600].filter(x => w > x).map(x => `${stem(src)}-${x}.webp ${x}w`).concat(`${stem(src)}.webp ${w}w`).join(', ');
-  const jpgSet = (src, w) => [640, 1280].filter(x => w > x).map(x => `${stem(src)}-${x}.jpg ${x}w`).concat(`${src} ${w}w`).join(', ');
-  const frameStyle = src => {
-    const m = MEDIA[src]; if (!m) return '';
-    return ` style="--tint: ${m[2]};${m[3] ? ` --lqip: url('${m[3]}');` : ''}"`;
-  };
-  const mediaTag = (src, ph, cls = '', { sizes = '100vw', eager = false } = {}) => {
-    if (isVideo(src)) return `<video class="${cls}" src="${esc(src)}" muted loop playsinline autoplay preload="metadata" data-ph="${esc(ph)}"></video>`;
-    const load = eager ? 'fetchpriority="high"' : 'loading="lazy"';
-    const m = MEDIA[src];
-    if (!m || !/\.jpe?g$/i.test(src)) return `<img class="${cls}" src="${esc(src)}" alt="" ${load} decoding="async" data-ph="${esc(ph)}">`;
-    return `<picture><source type="image/webp" srcset="${esc(webpSet(src, m[0]))}" sizes="${sizes}">` +
-      `<img class="${cls}" src="${esc(src)}" srcset="${esc(jpgSet(src, m[0]))}" sizes="${sizes}" width="${m[0]}" height="${m[1]}" alt="" ${load} decoding="async" data-ph="${esc(ph)}"></picture>`;
-  };
-
-  const coverHTML = (p, eager = false) => {
-    const src = fileUrl(p, p.cover);
-    const ph = phHTML(p, src || `work/${p.slug}/cover.jpg`);
-    const hover = p.hoverVideo ? `<div class="tile-reveal"><video muted loop playsinline preload="none" data-src="${esc(fileUrl(p, p.hoverVideo))}"></video></div>` : '';
-    return `<div class="cover-frame"${frameStyle(src)}>${mediaTag(src, ph, 'fade', { sizes: '(max-width: 1100px) 100vw, 50vw', eager })}${hover}</div>`;
-  };
-  const iconHTML = p => `<span class="icon icon--ph" style="--ph-bg:${esc(p.swatch?.bg || '#222')};--ph-fg:${esc(p.swatch?.fg || '#aaa')}">${esc((p.client || '?').trim()[0])}</span>`;
   const wireIcons = root => $$('[data-icon-ph]', root).forEach(img => {
     img.addEventListener('error', () => img.outerHTML = img.dataset.iconPh, { once: true });
   });
@@ -207,23 +175,10 @@
   }
 
   /* ---------- Home: featured deck ---------- */
+  // The build writes these rows into the page; they are redrawn here only if projects.js has changed since.
   const rows = $('[data-featured-rows]');
   if (rows) {
-    rows.innerHTML = FEATURED.map((p, i) => `
-<article class="featured-row">
-  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p, i < 2)}</a>
-  <div class="featured-row__text">
-    <div class="featured-row__top">
-      <span class="featured-row__num mono">${String(i + 1).padStart(2, '0')}</span>
-      <div>
-        <h3 class="featured-row__title">${esc(p.title)}</h3>
-        <p class="featured-row__meta mono">${esc(p.client)} / ${esc(p.year)} / ${esc(p.category)}</p>
-      </div>
-      <a class="arrow-btn" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${ARROW}</a>
-    </div>
-    <p class="featured-row__desc">${esc(p.summary)}</p>
-  </div>
-</article>`).join('');
+    if (rows.children.length !== FEATURED.length) rows.innerHTML = T.featuredRows(P);
     wireFallbacks(rows); wireHover(rows);
     const head = $('.featured__deck > .sec-head');
     const pin = () => document.documentElement.style.setProperty('--row-pin', (head.getBoundingClientRect().height + parseFloat(getComputedStyle(head).top) + 56) + 'px');
@@ -234,19 +189,7 @@
   /* ---------- Work page ---------- */
   const workRows = $('[data-work-rows]');
   if (workRows) {
-    workRows.innerHTML = P.map((p, i) => `
-<article class="work-row">
-  <a class="featured-row__media" href="${caseUrl(p)}" aria-label="${esc(p.client)}, view case study">${coverHTML(p, i < 2)}</a>
-  <div>
-    <a class="work-row__head" href="${caseUrl(p)}">
-      <span class="work-row__lead">${iconHTML(p)}<span>${esc(p.client)}</span></span>
-      <span class="work-row__title">${esc(p.title)}</span>
-      <span class="work-row__year mono">${esc(p.year)}</span>
-    </a>
-    <p class="work-row__body">${esc(p.summary)}</p>
-    <a class="btn work-row__cta" href="${caseUrl(p)}">View case study ${ARROW}</a>
-  </div>
-</article>`).join('');
+    if (workRows.children.length !== P.length) workRows.innerHTML = T.workRows(P);
     wireFallbacks(workRows); wireIcons(workRows); wireHover(workRows);
   }
 
@@ -271,43 +214,25 @@
     } catch (e) {}
   }
 
-  /* ---------- Case study ---------- */
+  /* ---------- Case study ----------
+     Each project has its own page at /work/<slug>, written by the build with the case study
+     already in the HTML. Here the chapters just get their behaviour. If a page arrives
+     empty (a project added without running the build), it is drawn from projects.js. */
   const caseRoot = $('[data-case]');
   if (caseRoot) {
     let io = null, lock = 0;
+    const slug = caseRoot.dataset.slug || location.pathname.replace(/\/$/, '').split('/').pop();
     const render = () => {
-      const slug = decodeURIComponent(location.hash.slice(1));
-      const i = Math.max(0, P.findIndex(p => p.slug === slug));
+      const i = P.findIndex(p => p.slug === slug);
       const p = P[i];
-      if (!p) { caseRoot.outerHTML = `<p class="csa-missing">No projects yet. <a href="index.html">Back home</a></p>`; return; }
-      const next = P[(i + 1) % P.length];
-      document.title = `${p.client}, ${p.title} | Ronij Barahi`;
-
-      let n = 0;
-      const gallery = (p.chapters || []).map((ch, ci) => (ch.rows || []).map((row, ri) => {
-        const frames = row.slice(0, 2).map(file => {
-          n++;
-          const src = fileUrl(p, file);
-          const ph = phHTML(p, src, { word: n === 1 || (ri === 0 && row.length === 1), neutral: !(n === 1 || (ri === 0 && row.length === 1)) });
-          const two = Math.min(row.length, 2) === 2;
-          return `<div class="csa-frame"${frameStyle(src)}>${mediaTag(src, ph, 'csa-media', { sizes: two ? '(max-width: 1100px) 50vw, 33vw' : '(max-width: 1100px) 100vw, 66vw', eager: n <= 2 })}</div>`;
-        }).join('');
-        return `<div class="csa-row" style="--n: ${Math.min(row.length, 2)}" data-ch="${ci}"${ri === 0 ? ` id="ch-${ci}" data-ch-start` : ''}>${frames}</div>`;
-      }).join('')).join('');
-
-      const head = `<h1 class="csa-head"><span class="csa-head__lead">${iconHTML(p)}<span>${esc(p.client)}</span></span><span class="csa-head__title">${esc(p.title)}</span><span class="csa-head__year mono">${esc(p.year)}</span></h1>`;
-      const acc = (p.chapters || []).map((ch, ci) => `
-<div class="csa-acc__item${ci === 0 ? ' is-open' : ''}" data-acc="${ci}">
-  <h2 style="margin:0;font-size:inherit"><button type="button" class="csa-acc__head mono" aria-expanded="${ci === 0}" aria-controls="acc-${ci}"><span>${String(ci + 1).padStart(2, '0')}</span><span>${esc(ch.label)}</span><span class="qa__icon" aria-hidden="true"></span></button></h2>
-  <div class="csa-acc__panel" id="acc-${ci}"><div class="csa-acc__panel-inner"><p class="csa-acc__body">${esc(ch.body)}</p></div></div>
-</div>`).join('');
-      const nextHTML = cls => `<div class="${cls}"><a class="csa-next__card" href="${caseUrl(next)}"><p class="csa-next__label mono"><span>Next project</span>${ARROW}</p><span class="csa-next__row"><span class="csa-head__lead">${iconHTML(next)}<span>${esc(next.client)}</span></span><span class="csa-head__title">${esc(next.title)}</span><span class="csa-head__year mono">${esc(next.year)}</span></span></a></div>`;
-
-      caseRoot.innerHTML = `<div class="csa-gallery">${gallery}</div><aside class="csa-aside">${head}<div class="csa-acc">${acc}</div>${nextHTML('csa-next')}</aside>`;
-      const mob = $('[data-case-next-mobile]');
-      if (mob) mob.innerHTML = nextHTML('csa-next csa-next--mobile');
+      if (!p) { caseRoot.outerHTML = `<p class="csa-missing">This project could not be found. <a href="/work">See all work</a></p>`; return; }
+      if (!caseRoot.children.length) {
+        const c = T.caseStudy(P, i);
+        caseRoot.innerHTML = c.main;
+        const mob = $('[data-case-next-mobile]');
+        if (mob) mob.innerHTML = c.nextMobile;
+      }
       wireFallbacks(document); wireIcons(document);
-      lenis ? lenis.scrollTo(0, { immediate: true }) : scrollTo(0, 0);
 
       const openCh = ci => $$('.csa-acc__item', caseRoot).forEach(it => {
         const on = String(it.dataset.acc) === String(ci);
@@ -333,7 +258,6 @@
       }
     };
     render();
-    addEventListener('hashchange', render);
   }
 
   /* ---------- Contact form ----------

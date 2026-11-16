@@ -1,35 +1,53 @@
 # ronijbarahi.com
 
-A plain static site with no build step. Vercel serves it as is.
+A static site. Vercel serves the files as they are in this repo. A small build script
+(`scripts/build.js`, plain Node, nothing to install) writes the case study pages and the
+search tags, and its output is committed with your changes.
 
 ## Pages
 - `index.html`: home (photo, intro, details, Featured work, FAQs)
 - `work.html`: every project
-- `case.html#<slug>`: one case study page per project
-- `contact.html`: a 3-step enquiry form that opens the visitor's email app with the message filled in
+- `work/<slug>/index.html`: one case study page per project, served at `/work/<slug>` (made by the build)
+- `contact.html`: a 3-step enquiry form
+- `case.html`: forwards old `case.html#<slug>` links to `/work/<slug>` (made by the build)
+- `templates/case.html`: the layout every case study page is made from
 
 ## Your photo
 Your portrait is **`assets/ronij.jpg`**. It appears in the hero and on the contact page. Replace the file (same name) to change it.
+The image shown when the site is shared on LinkedIn, WhatsApp and so on is **`assets/og.jpg`** (1200×630).
 
 ## Your details
 The hero details (based in, studio, clients, email) are written directly in `index.html`, inside `<dl class="details">`.
 
 ## Adding or editing work
-Edit **`assets/projects.js`**. Each project needs a `slug`, `client`, `title`, `year`, `category`, `summary`, and `chapters`.
-
-Put the images in `work/<slug>/`:
+1. Edit **`assets/projects.js`**. Each project needs a `slug`, `client`, `title`, `year`, `category`, `summary`, and `chapters`.
+2. Put the images in `work/<slug>/` (see below).
+3. Run **`node scripts/build.js`**. It writes the project's page, updates the Home and Work lists, the sitemap,
+   and stops with a clear message if an image is missing or a slug is wrong.
+4. Commit everything it changed and push.
 
 ```
-work/bakehouse-ny/cover.jpg   ← 16:9, used on Home and Work
-work/bakehouse-ny/icon.png    ← optional 40×40 logo
-work/bakehouse-ny/01.jpg      ← case study gallery, listed under chapters[].rows
-work/bakehouse-ny/02.mp4      ← videos work too (muted, looping)
+work/bakehouse-ny/01.jpg      ← cover (set with cover: "01.jpg"), 16:9, used on Home and Work
+work/bakehouse-ny/02.jpg      ← case study gallery, listed under chapters[].rows
+work/bakehouse-ny/03.mp4      ← videos work too (muted, looping)
 ```
 
-Until a file exists, a coloured placeholder shows in its place.
+Optional fields for a project:
+- `seoTitle`: the page title in Google. Default: `<client> Brand Identity | Ronij Barahi`
+- `seoDescription`: the line under the title in Google. Default: the project's `summary`
+- `alt: { "06.jpg": "BH monogram seal on a cake box" }`: describe an image for Google Images and screen readers.
+  Images without one get `<client> brand identity, <chapter>`.
+
+Skip step 3 and a new project will show in the lists but its page won't exist yet, so always run the build.
+
+## Search engines
+- Titles and descriptions for Home, Work and Contact are in `PAGES` at the top of `scripts/build.js`.
+- The build also writes structured data (who you are, each project), `sitemap.xml` and `robots.txt`.
+- All links start with `/`, so to preview locally use a small server (e.g. `npx serve`) rather than opening the files directly.
 
 ## Client strip
 Edit `window.CLIENTS` at the top of `assets/projects.js`. Add `logo: "work/logos/name.svg"` to show a logo instead of the name.
 
 ## Deploying
-Push to the GitHub repo connected to Vercel. `vercel.json` turns on clean URLs, so `/work` serves `work.html`.
+Push to the GitHub repo connected to Vercel. `vercel.json` turns on clean URLs, so `/work` serves `work.html`
+and `/work/bakehouse-ny` serves `work/bakehouse-ny/index.html`.
