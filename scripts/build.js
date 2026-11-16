@@ -19,7 +19,9 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-const SITE = 'https://ronijbarahi.com';
+// The live site answers on www (ronijbarahi.com redirects there), so every URL we
+// give search engines uses www too.
+const SITE = 'https://www.ronijbarahi.com';
 const NAME = 'Ronij Barahi';
 const OG_IMAGE = { url: `${SITE}/assets/og.jpg`, width: 1200, height: 630, alt: 'Ronij Barahi, brand designer and creative director in Kathmandu, Nepal' };
 
