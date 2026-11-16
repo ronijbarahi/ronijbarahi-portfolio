@@ -7,7 +7,7 @@ search tags, and its output is committed with your changes.
 ## Pages
 - `index.html`: home (photo, intro, details, Featured work, FAQs)
 - `work.html`: every project
-- `work/<slug>/index.html`: one case study page per project, served at `/work/<slug>` (made by the build)
+- `work/<slug>.html`: one case study page per project, served at `/work/<slug>` (made by the build)
 - `contact.html`: a 3-step enquiry form
 - `case.html`: forwards old `case.html#<slug>` links to `/work/<slug>` (made by the build)
 - `templates/case.html`: the layout every case study page is made from
@@ -50,4 +50,4 @@ Edit `window.CLIENTS` at the top of `assets/projects.js`. Add `logo: "work/logos
 
 ## Deploying
 Push to the GitHub repo connected to Vercel. `vercel.json` turns on clean URLs, so `/work` serves `work.html`
-and `/work/bakehouse-ny` serves `work/bakehouse-ny/index.html`.
+and `/work/bakehouse-ny` serves `work/bakehouse-ny.html`.

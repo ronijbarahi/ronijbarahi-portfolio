@@ -3,7 +3,8 @@
    Build: run   node scripts/build.js   after changing assets/projects.js.
 
    It writes, from assets/projects.js:
-     • work/<slug>/index.html   one real page per project, served at /work/<slug>
+     • work/<slug>.html         one real page per project, served at /work/<slug>
+                                (the same way work.html is served at /work)
      • the Featured rows on the home page and the list on the Work page
      • the search and share tags (title, description, image) in every page's <head>
      • case.html                forwards old links (case.html#slug) to the new pages
@@ -178,12 +179,12 @@ P.forEach((p, i) => {
     .replace('{{SLUG}}', esc(p.slug))
     .replace('{{CASE}}', () => c.main)
     .replace('{{NEXT_MOBILE}}', () => c.nextMobile);
-  write(`work/${p.slug}/index.html`, html);
+  write(`work/${p.slug}.html`, html);
 });
 // Remove pages for projects that were deleted from projects.js.
-fs.readdirSync(path.join(ROOT, 'work'), { withFileTypes: true }).filter(d => d.isDirectory() && !seen.has(d.name)).forEach(d => {
-  const f = path.join(ROOT, 'work', d.name, 'index.html');
-  if (fs.existsSync(f) && fs.readFileSync(f, 'utf8').includes(GENERATED)) { fs.unlinkSync(f); console.log(`Removed old page work/${d.name}/index.html`); }
+fs.readdirSync(path.join(ROOT, 'work')).filter(n => n.endsWith('.html') && !seen.has(n.slice(0, -5))).forEach(n => {
+  const f = path.join(ROOT, 'work', n);
+  if (fs.readFileSync(f, 'utf8').includes(GENERATED)) { fs.unlinkSync(f); console.log(`Removed old page work/${n}`); }
 });
 
 /* ---------- Old links: case.html#slug ---------- */
