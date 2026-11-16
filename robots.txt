@@ -3,4 +3,4 @@ Allow: /
 Disallow: /templates/
 Disallow: /scripts/
 
-Sitemap: https://ronijbarahi.com/sitemap.xml
+Sitemap: https://www.ronijbarahi.com/sitemap.xml
