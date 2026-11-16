@@ -28,8 +28,13 @@ const OG_IMAGE = { url: `${SITE}/assets/og.jpg`, width: 1200, height: 630, alt: 
 const PAGES = {
   'index.html': {
     url: '/',
-    title: 'Ronij Barahi | Brand Designer in Kathmandu, Nepal',
-    description: 'Ronij Barahi is a brand designer in Kathmandu, Nepal, making brand identities, packaging and websites for restaurants, retailers and founders worldwide.'
+    title: 'Ronij Barahi | Graphic and Logo Designer in Nepal',
+    description: 'Graphic and logo designer in Kathmandu, Nepal. Ronij Barahi designs logos, brand identities, packaging and websites for clients in Nepal and worldwide.'
+  },
+  'logo-designer-nepal.html': {
+    url: '/logo-designer-nepal',
+    title: 'Logo Designer in Nepal | Ronij Barahi',
+    description: 'Logo design in Kathmandu, Nepal by Ronij Barahi. Logos for restaurants, cafés, retailers and founders, with the files and guidelines to use them well.'
   },
   'work.html': {
     url: '/work',
@@ -50,11 +55,12 @@ const PERSON = {
   name: NAME,
   url: `${SITE}/`,
   image: `${SITE}/assets/ronij.jpg`,
-  jobTitle: 'Brand designer and creative director',
+  jobTitle: 'Graphic designer, logo designer and brand designer',
   email: 'mailto:hello@ronijbarahi.com',
   address: { '@type': 'PostalAddress', addressLocality: 'Kathmandu', addressCountry: 'NP' },
   worksFor: { '@type': 'Organization', name: 'Jungle', url: 'https://designbyjungle.com' },
-  knowsAbout: ['Brand identity', 'Brand strategy', 'Packaging design', 'Brand guidelines', 'Website design'],
+  knowsAbout: ['Graphic design', 'Logo design', 'Brand identity', 'Brand strategy', 'Packaging design', 'Brand guidelines', 'Website design'],
+  areaServed: ['Nepal', 'Australia', 'New Zealand', 'United States', 'Canada'],
   sameAs: ['https://www.behance.net/ronijbarahii', 'https://www.instagram.com/ronijbarahi']
 };
 
@@ -114,9 +120,9 @@ const putSeo = (html, block) => {
 };
 // Fill the inside of an element marked with a data attribute, e.g. <div … data-work-rows>…</div>.
 const fillMarked = (html, attr, inner) => {
-  const re = new RegExp(`(<div[^>]*\\s${attr}(?:\\s[^>]*)?>)[\\s\\S]*?(</div>\\s*<!-- /${attr} -->)`);
+  const re = new RegExp(`(<div[^>]*\\s${attr}(?:="[^"]*")?(?:\\s[^>]*)?>)[\\s\\S]*?(</div>\\s*<!-- /${attr} -->)`);
   if (re.test(html)) return html.replace(re, (m, a, b) => a + inner + '\n' + b);
-  const open = new RegExp(`(<div[^>]*\\s${attr}(?:\\s[^>]*)?>)</div>`);
+  const open = new RegExp(`(<div[^>]*\\s${attr}(?:="[^"]*")?(?:\\s[^>]*)?>)</div>`);
   if (!open.test(html)) throw new Error(`${attr} container not found`);
   return html.replace(open, (m, a) => `${a}${inner}\n</div><!-- /${attr} -->`);
 };
@@ -134,11 +140,22 @@ const coverImage = p => {
 };
 const crumbs = items => ({ '@type': 'BreadcrumbList', itemListElement: items.map(([name, url], i) => ({ '@type': 'ListItem', position: i + 1, name, item: SITE + url })) });
 
-/* ---------- Home, Work, Contact ---------- */
+/* ---------- Questions and answers ----------
+   Every FAQ on a page (the .qa blocks) is also given to search engines and AI assistants as
+   structured questions and answers, read straight from the page so the two always match. */
+const unesc = s => s.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').trim();
+const faqsIn = html => [...html.matchAll(/<button[^>]*class="qa__q"[^>]*>[\s\S]*?<span>([\s\S]*?)<\/span>[\s\S]*?<p class="qa__a">([\s\S]*?)<\/p>/g)]
+  .map(m => ({ q: unesc(m[1]), a: unesc(m[2]) }));
+const faqPage = (html, url) => {
+  const list = faqsIn(html);
+  return list.length ? { '@type': 'FAQPage', '@id': `${SITE}${url === '/' ? '/' : url}#faq`, mainEntity: list.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) } : null;
+};
+
+/* ---------- Home, Work, Contact, Logo design ---------- */
 const FEATURED = P.filter(p => p.featured);
 {
   let html = read('index.html');
-  html = putSeo(html, seoBlock({ ...PAGES['index.html'], data: { '@graph': [PERSON, { '@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: NAME, publisher: { '@id': `${SITE}/#person` } }] } }));
+  html = putSeo(html, seoBlock({ ...PAGES['index.html'], data: { '@graph': [PERSON, { '@type': 'WebSite', '@id': `${SITE}/#website`, url: `${SITE}/`, name: NAME, publisher: { '@id': `${SITE}/#person` } }, faqPage(html, '/')].filter(Boolean) } }));
   html = fillMarked(html, 'data-featured-rows', T.featuredRows(P));
   html = html.replace(/(<span class="count" data-count="featured">)[^<]*(<\/span>)/, `$1${count(FEATURED.length)}$2`);
   write('index.html', html);
@@ -158,6 +175,22 @@ const FEATURED = P.filter(p => p.featured);
   let html = read('contact.html');
   html = putSeo(html, seoBlock({ ...PAGES['contact.html'], data: { '@type': 'ContactPage', url: `${SITE}/contact`, name: PAGES['contact.html'].title, about: { '@id': `${SITE}/#person` } } }));
   write('contact.html', html);
+}
+{
+  const file = 'logo-designer-nepal.html', page = PAGES[file];
+  let html = read(file);
+  html = putSeo(html, seoBlock({ ...page, data: { '@graph': [
+    { '@type': 'Service', '@id': `${SITE}${page.url}#service`, name: 'Logo design in Nepal', serviceType: 'Logo design', url: SITE + page.url, description: page.description,
+      provider: { '@id': `${SITE}/#person` }, areaServed: PERSON.areaServed },
+    faqPage(html, page.url),
+    crumbs([['Home', '/'], ['Logo design', page.url]]),
+    PERSON
+  ].filter(Boolean) } }));
+  const pick = ((html.match(/data-work-rows="([^"]*)"/) || [])[1] || '').split(/\s+/).filter(Boolean);
+  const items = pick.map(s => P.find(p => p.slug === s)).filter(Boolean);
+  if (pick.length !== items.length) { console.error(`Build stopped: ${file} names a project that is not in projects.js.`); process.exit(1); }
+  html = fillMarked(html, 'data-work-rows', T.workRows(items));
+  write(file, html);
 }
 
 /* ---------- One page per project ---------- */
@@ -213,9 +246,32 @@ ${GENERATED}
 </html>
 `);
 
+/* ---------- llms.txt ----------
+   A plain summary of the site for AI assistants (ChatGPT, Claude, Perplexity and others). */
+write('llms.txt', `# ${NAME}
+
+> ${NAME} is a graphic designer, logo designer and brand designer based in Kathmandu, Nepal, and cofounder and creative director of the studio Jungle. He designs logos, brand identities, packaging and websites for restaurants, retailers and founders in ${PERSON.areaServed.slice(0, -1).join(', ')} and ${PERSON.areaServed.slice(-1)}.
+
+- Based in: Kathmandu, Nepal (UTC+5:45)
+- Services: logo design, brand identity, brand guidelines, packaging design, website design
+- Quotes: fixed quote after a short brief, in NPR for clients in Nepal and AUD for clients in Australia
+- Contact: hello@ronijbarahi.com or ${SITE}/contact
+- Instagram: https://www.instagram.com/ronijbarahi
+- Behance: https://www.behance.net/ronijbarahii
+
+## Pages
+- [Home](${SITE}/): who Ronij is, featured work and FAQs
+- [Logo designer in Nepal](${SITE}/logo-designer-nepal): how logo projects work, recent logos, FAQs
+- [Work](${SITE}/work): every case study
+- [Contact](${SITE}/contact): start a project
+
+## Case studies
+${P.map(p => `- [${p.client}: ${p.title}](${SITE}/work/${p.slug}): ${p.summary}`).join('\n')}
+`);
+
 /* ---------- Sitemap and robots ---------- */
 const today = new Date().toISOString().slice(0, 10);
-const urls = ['/', '/work', ...P.map(p => `/work/${p.slug}`), '/contact'];
+const urls = ['/', '/logo-designer-nepal', '/work', ...P.map(p => `/work/${p.slug}`), '/contact'];
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url><loc>${SITE}${u}</loc><lastmod>${today}</lastmod></url>`).join('\n')}

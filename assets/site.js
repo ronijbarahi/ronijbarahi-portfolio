@@ -186,12 +186,15 @@
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(pin);
   }
 
-  /* ---------- Work page ---------- */
-  const workRows = $('[data-work-rows]');
-  if (workRows) {
-    if (workRows.children.length !== P.length) workRows.innerHTML = T.workRows(P);
-    wireFallbacks(workRows); wireIcons(workRows); wireHover(workRows);
-  }
+  /* ---------- Work lists ----------
+     The Work page lists every project. A page can list a chosen few instead by naming
+     their slugs: <div class="work-deck" data-work-rows="bakehouse-ny nu-cosmetics">. */
+  $$('[data-work-rows]').forEach(list => {
+    const pick = (list.dataset.workRows || '').split(/\s+/).filter(Boolean);
+    const items = pick.length ? pick.map(s => P.find(p => p.slug === s)).filter(Boolean) : P;
+    if (list.children.length !== items.length) list.innerHTML = T.workRows(items);
+    wireFallbacks(list); wireIcons(list); wireHover(list);
+  });
 
   /* ---------- FAQ ---------- */
   $$('.qa').forEach(qa => {
