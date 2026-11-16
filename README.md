@@ -45,6 +45,17 @@ Skip step 3 and a new project will show in the lists but its page won't exist ye
 - The build also writes structured data (who you are, each project), `sitemap.xml` and `robots.txt`.
 - All links start with `/`, so to preview locally use a small server (e.g. `npx serve`) rather than opening the files directly.
 
+## Contact form
+Enquiries go to a Google Apps Script web app inside the **"ronijbarahi.com enquiries"** Google Sheet in
+barahironij@gmail.com's Drive. Each one becomes a row in the sheet's **Enquiries** tab and is emailed to that
+Gmail address, with Reply going straight to the person who wrote.
+
+- The web app's address is the `data-endpoint` on the `<form>` in `contact.html`.
+- Its code is kept here in `scripts/contact-form.gs`. To change it, paste it into the sheet's
+  Extensions > Apps Script, then Deploy > Manage deployments > edit > Version: New version > Deploy.
+  The address stays the same.
+- If the web app can't be reached, the form falls back to opening the visitor's email app.
+
 ## Client strip
 Edit `window.CLIENTS` at the top of `assets/projects.js`. Add `logo: "work/logos/name.svg"` to show a logo instead of the name.
 
