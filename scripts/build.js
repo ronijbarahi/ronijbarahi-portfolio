@@ -58,7 +58,6 @@ const PERSON = {
   jobTitle: 'Graphic designer, logo designer and brand designer',
   email: 'mailto:hello@ronijbarahi.com',
   address: { '@type': 'PostalAddress', addressLocality: 'Kathmandu', addressCountry: 'NP' },
-  worksFor: { '@type': 'Organization', name: 'Jungle', url: 'https://designbyjungle.com' },
   knowsAbout: ['Graphic design', 'Logo design', 'Brand identity', 'Brand strategy', 'Packaging design', 'Brand guidelines', 'Website design'],
   areaServed: ['Nepal', 'Australia', 'New Zealand', 'United States', 'Canada'],
   sameAs: ['https://www.behance.net/ronijbarahii', 'https://www.instagram.com/ronijbarahi']
@@ -250,7 +249,7 @@ ${GENERATED}
    A plain summary of the site for AI assistants (ChatGPT, Claude, Perplexity and others). */
 write('llms.txt', `# ${NAME}
 
-> ${NAME} is a graphic designer, logo designer and brand designer based in Kathmandu, Nepal, and cofounder and creative director of the studio Jungle. He designs logos, brand identities, packaging and websites for restaurants, retailers and founders in ${PERSON.areaServed.slice(0, -1).join(', ')} and ${PERSON.areaServed.slice(-1)}.
+> ${NAME} is a graphic designer, logo designer, brand designer and creative director based in Kathmandu, Nepal. He designs logos, brand identities, packaging and websites for restaurants, retailers and founders in ${PERSON.areaServed.slice(0, -1).join(', ')} and ${PERSON.areaServed.slice(-1)}.
 
 - Based in: Kathmandu, Nepal (UTC+5:45)
 - Services: logo design, brand identity, brand guidelines, packaging design, website design
